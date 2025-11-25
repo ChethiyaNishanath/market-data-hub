@@ -1,0 +1,47 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go build outputs
+/build/
+bin/
+app
+*.out
+
+# Dependency directories (vendor)
+vendor/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Logs
+*.log
+log/
+logs/
+
+# Environment & config files
+.env
+.env.local
+.env.*
+.envrc
+config.yaml
+config.yml
+
+# Docker
+/docker-compose.override.yml
+*.pid
+*.seed
+*.db
+
+# Database migrations (compiled or generated)
+internal/db/sqlc/*.go
+migrations/*.tmp

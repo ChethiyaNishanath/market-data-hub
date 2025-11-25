@@ -1,0 +1,10 @@
+services:
+  market-data-hub:
+    build: .
+    container_name: market-data-hub-app
+    environment:
+      PORT: 8080
+      SHUTDOWN_TIMEOUT: 10
+    ports:
+      - "8080:8080"
+    restart: always
