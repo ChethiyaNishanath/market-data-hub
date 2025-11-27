@@ -10,12 +10,14 @@ import (
 )
 
 type Module struct {
+	Config  config.BinanceConfig
 	ConnMgr *ws.ConnectionManager
 }
 
-func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionManager) *Module {
+func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionManager, cfg config.BinanceConfig) *Module {
 
 	module := &Module{
+		Config:  cfg,
 		ConnMgr: connMger,
 	}
 
@@ -26,14 +28,18 @@ func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionMan
 
 func (m *Module) registerEventSubscribers(bus *events.Bus) {
 
-	config := config.GetConfig()
-
-	symbols := strings.Split(strings.ToLower(config.Binance.SubscribedSymbols), ",")
+	symbols := strings.Split(strings.ToLower(m.Config.Subscriptions), ",")
 
 	binanceDepthTopics := []string{}
 
 	for _, symbol := range symbols {
-		binanceDepthTopics = append(binanceDepthTopics, symbol+"@depth")
+		cleaned := strings.TrimSpace(symbol)
+		cleaned = strings.ToLower(cleaned)
+
+		if cleaned == "" {
+			continue
+		}
+		binanceDepthTopics = append(binanceDepthTopics, cleaned+"@depth")
 	}
 
 	for _, sbdt := range binanceDepthTopics {

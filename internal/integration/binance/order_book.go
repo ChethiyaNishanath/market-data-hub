@@ -60,9 +60,8 @@ func (ob *OrderBook) removeAsk(price string) {
 	}
 }
 
-func FetchSnapshot(symbol string) (*OrderBook, error) {
-	config := config.GetConfig()
-	restClient := rest.NewRestClient(config.Binance.WsRestApiUrlV3, 1*time.Second)
+func FetchSnapshot(symbol string, cfg config.BinanceConfig) (*OrderBook, error) {
+	restClient := rest.NewRestClient(cfg.RestApiUrlV3, 1*time.Second)
 
 	ctx := context.Background()
 
