@@ -10,12 +10,14 @@ import (
 )
 
 type Module struct {
+	Config  config.BinanceConfig
 	ConnMgr *ws.ConnectionManager
 }
 
-func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionManager) *Module {
+func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionManager, cfg config.BinanceConfig) *Module {
 
 	module := &Module{
+		Config:  cfg,
 		ConnMgr: connMger,
 	}
 
@@ -26,25 +28,38 @@ func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionMan
 
 func (m *Module) registerEventSubscribers(bus *events.Bus) {
 
-	config := config.GetConfig()
+	symbols := strings.SplitSeq(strings.ToLower(m.Config.Subscriptions), ",")
 
-	symbols := strings.Split(strings.ToLower(config.Binance.SubscribedSymbols), ",")
+	for symbol := range symbols {
 
-	binanceDepthTopics := []string{}
+		cleaned := strings.TrimSpace(symbol)
+		cleaned = strings.ToLower(cleaned)
+		if cleaned == "" {
+			continue
+		}
 
-	for _, symbol := range symbols {
-		binanceDepthTopics = append(binanceDepthTopics, symbol+"@depth")
-	}
+		depthTopic := cleaned + "@depth"
+		resetTopic := cleaned + "@depth.reset"
 
-	for _, sbdt := range binanceDepthTopics {
-
-		bus.Subscribe(sbdt, func(e events.Event) {
+		bus.Subscribe(depthTopic, func(e events.Event) {
 			evt := e.Data.(DepthStreamEvent)
 			m.ConnMgr.Broadcast(
 				context.Background(),
 				e.Topic,
 				ws.WSMessage{
 					Data: evt,
+				},
+			)
+		})
+
+		bus.Subscribe(resetTopic, func(e events.Event) {
+			evt := e.Data.(OrderBookResetEvent)
+			m.ConnMgr.Broadcast(
+				context.Background(),
+				e.Topic,
+				ws.WSMessage{
+					Method: "orderbook_reset",
+					Data:   evt,
 				},
 			)
 		})

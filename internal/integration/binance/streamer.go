@@ -31,6 +31,7 @@ type Streamer struct {
 	bus     *events.Bus
 	Symbols map[string]*SymbolState
 	mu      sync.RWMutex
+	config  config.BinanceConfig
 }
 
 type SubscribeAck struct {
@@ -38,21 +39,28 @@ type SubscribeAck struct {
 	Result string `json:"result"`
 }
 
-func NewStreamer(ctx context.Context, bus *events.Bus) *Streamer {
+func NewStreamer(ctx context.Context, bus *events.Bus, cfg config.BinanceConfig) *Streamer {
 	return &Streamer{
-		ctx: ctx,
-		bus: bus,
+		ctx:    ctx,
+		bus:    bus,
+		config: cfg,
 	}
 }
 
 func (s *Streamer) Start(ctx context.Context) {
 
-	config := config.GetConfig()
-	symbols := strings.Split(config.Binance.SubscribedSymbols, ",")
+	symbols := strings.Split(s.config.Subscriptions, ",")
 
 	s.Symbols = make(map[string]*SymbolState)
 
 	for _, sym := range symbols {
+
+		symbol := strings.TrimSpace(sym)
+		symbol = strings.ToUpper(symbol)
+
+		if symbol == "" {
+			continue
+		}
 
 		st := &SymbolState{
 			OrderBook:     nil,
@@ -62,18 +70,18 @@ func (s *Streamer) Start(ctx context.Context) {
 		}
 
 		s.mu.Lock()
-		s.Symbols[sym] = st
+		s.Symbols[symbol] = st
 		s.mu.Unlock()
 
-		go s.streamDepthUpdates(ctx, sym, st.updateCh, &st.buffer, &st.bufferMu, st.snapshotReady)
+		go s.streamDepthUpdates(ctx, symbol, st.updateCh, &st.buffer, &st.bufferMu, st.snapshotReady)
 
-		go s.initializeSymbol(ctx, sym, st)
+		go s.initializeSymbol(ctx, symbol, st)
 	}
 }
 
 func (s *Streamer) initializeSymbol(ctx context.Context, symbol string, st *SymbolState) {
 
-	snapshot, err := FetchSnapshot(symbol)
+	snapshot, err := FetchSnapshot(symbol, s.config)
 	if err != nil {
 		slog.Error("Snapshot load failed", "symbol", symbol, "error", err)
 		return
@@ -136,8 +144,6 @@ func (s *Streamer) streamDepthUpdates(
 	snapshotReady <-chan struct{},
 ) {
 
-	config := config.GetConfig()
-
 	isBuffering := true
 
 	for {
@@ -147,7 +153,7 @@ func (s *Streamer) streamDepthUpdates(
 		default:
 		}
 
-		client := ws.NewWSClient(ctx, config.Binance.WsStreamUrl)
+		client := ws.NewWSClient(ctx, s.config.WsStreamUrl)
 
 		client.OnMessage = func(mt websocket.MessageType, data []byte) {
 			var update DepthUpdateEvent
@@ -202,7 +208,7 @@ func (s *Streamer) streamDepthUpdates(
 		slog.Info("Subscribed", "symbol", symbol)
 
 		if err := client.BlockUntilClosed(); err != nil {
-			slog.Warn("WS disconnected – reconnecting", "err", err)
+			slog.Warn("WS disconnected - reconnecting", "err", err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -253,7 +259,7 @@ func (s *Streamer) applyDepthEvents(ctx context.Context, symbol string, st *Symb
 				"expected", last+1, "got", U)
 			s.mu.Unlock()
 
-			snapshot, err := FetchSnapshot(symbol)
+			snapshot, err := FetchSnapshot(symbol, s.config)
 			if err != nil {
 				slog.Error("Snapshot reload failed", "error", err)
 				continue
@@ -263,6 +269,7 @@ func (s *Streamer) applyDepthEvents(ctx context.Context, symbol string, st *Symb
 			st.OrderBook.ApplySnapshot(snapshot)
 			st.OrderBook.Initialized = false
 			slog.Info("Snapshot resynced", "lastUpdateId", snapshot.LastUpdateID)
+			s.broadcastOrderbookReset(symbol, "Orderbook desync detected", st.OrderBook)
 			s.mu.Unlock()
 		}
 	}
@@ -320,4 +327,16 @@ func (s *Streamer) broadcastDepthUpdate(update DepthUpdateEvent) {
 	}
 
 	s.bus.Publish("depthUpdate", fmt.Sprintf("%s@depth", strings.ToLower(update.Symbol)), event)
+}
+
+func (s *Streamer) broadcastOrderbookReset(symbol string, reason string, snapshot *OrderBook) {
+
+	event := OrderBookResetEvent{
+		Symbol:    symbol,
+		Snapshot:  snapshot,
+		Reason:    reason,
+		Timestamp: time.Now().Unix(),
+	}
+
+	s.bus.Publish("orderbookReset", fmt.Sprintf("%s@depth.reset", strings.ToLower(symbol)), event)
 }
