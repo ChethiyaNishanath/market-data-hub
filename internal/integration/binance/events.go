@@ -26,3 +26,10 @@ type OrderBookStreamEvent struct {
 	Bids         [][]string `json:"bids"`
 	Asks         [][]string `json:"asks"`
 }
+
+type OrderBookResetEvent struct {
+	Symbol    string     `json:"symbol"`
+	Snapshot  *OrderBook `json:"snapshot"`
+	Reason    string     `json:"reason"`
+	Timestamp int64      `json:"timestamp"`
+}

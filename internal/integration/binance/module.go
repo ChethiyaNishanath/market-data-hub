@@ -28,29 +28,38 @@ func NewModule(ctx *context.Context, bus *events.Bus, connMger *ws.ConnectionMan
 
 func (m *Module) registerEventSubscribers(bus *events.Bus) {
 
-	symbols := strings.Split(strings.ToLower(m.Config.Subscriptions), ",")
+	symbols := strings.SplitSeq(strings.ToLower(m.Config.Subscriptions), ",")
 
-	binanceDepthTopics := []string{}
+	for symbol := range symbols {
 
-	for _, symbol := range symbols {
 		cleaned := strings.TrimSpace(symbol)
 		cleaned = strings.ToLower(cleaned)
-
 		if cleaned == "" {
 			continue
 		}
-		binanceDepthTopics = append(binanceDepthTopics, cleaned+"@depth")
-	}
 
-	for _, sbdt := range binanceDepthTopics {
+		depthTopic := cleaned + "@depth"
+		resetTopic := cleaned + "@depth.reset"
 
-		bus.Subscribe(sbdt, func(e events.Event) {
+		bus.Subscribe(depthTopic, func(e events.Event) {
 			evt := e.Data.(DepthStreamEvent)
 			m.ConnMgr.Broadcast(
 				context.Background(),
 				e.Topic,
 				ws.WSMessage{
 					Data: evt,
+				},
+			)
+		})
+
+		bus.Subscribe(resetTopic, func(e events.Event) {
+			evt := e.Data.(OrderBookResetEvent)
+			m.ConnMgr.Broadcast(
+				context.Background(),
+				e.Topic,
+				ws.WSMessage{
+					Method: "orderbook_reset",
+					Data:   evt,
 				},
 			)
 		})

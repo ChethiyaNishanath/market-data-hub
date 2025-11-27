@@ -269,6 +269,7 @@ func (s *Streamer) applyDepthEvents(ctx context.Context, symbol string, st *Symb
 			st.OrderBook.ApplySnapshot(snapshot)
 			st.OrderBook.Initialized = false
 			slog.Info("Snapshot resynced", "lastUpdateId", snapshot.LastUpdateID)
+			s.broadcastOrderbookReset(symbol, "Orderbook desync detected", st.OrderBook)
 			s.mu.Unlock()
 		}
 	}
@@ -326,4 +327,16 @@ func (s *Streamer) broadcastDepthUpdate(update DepthUpdateEvent) {
 	}
 
 	s.bus.Publish("depthUpdate", fmt.Sprintf("%s@depth", strings.ToLower(update.Symbol)), event)
+}
+
+func (s *Streamer) broadcastOrderbookReset(symbol string, reason string, snapshot *OrderBook) {
+
+	event := OrderBookResetEvent{
+		Symbol:    symbol,
+		Snapshot:  snapshot,
+		Reason:    reason,
+		Timestamp: time.Now().Unix(),
+	}
+
+	s.bus.Publish("orderbookReset", fmt.Sprintf("%s@depth.reset", strings.ToLower(symbol)), event)
 }
