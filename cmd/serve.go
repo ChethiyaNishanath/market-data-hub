@@ -18,6 +18,7 @@ import (
 
 	"github.com/ChethiyaNishanath/market-data-hub/internal/app"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/grpc"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -80,6 +81,8 @@ func run() {
 	r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 	newApp.RegisterRoutes(r)
+
+	go grpc.RunGrpcServer()
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
