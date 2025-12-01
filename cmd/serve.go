@@ -19,6 +19,7 @@ import (
 	"github.com/ChethiyaNishanath/market-data-hub/internal/app"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/grpc"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/integration/binance"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -38,6 +39,7 @@ func init() {
 	serveCmd.Flags().Int("server.port", 8080, "Port to run the server on")
 	serveCmd.Flags().Int("server.shutdownTimeout", 10, "Server shutdown timeout")
 	serveCmd.Flags().String("integrations.binance.subscriptions", "BTCUSDT, BNBBTC", "Server shutdown timeout")
+	serveCmd.Flags().Bool("all-symbols", false, "Server shutdown timeout")
 }
 
 func run() {
@@ -50,6 +52,17 @@ func run() {
 	if b, err := json.MarshalIndent(cfg, "", "  "); err == nil {
 		slog.Debug("CONFIG LOADED\n", "values", string(b))
 	}
+
+	if viper.GetBool("all-symbols") {
+		subs, err := allSubscriptions(cfg)
+		if err != nil {
+			slog.Error(fmt.Sprintf("failed to get all subscriptions: %v", err))
+		}
+
+		cfg.Integrations.Binance.Subscriptions = subs
+	}
+
+	fmt.Println(cfg.Integrations.Binance)
 
 	slog.SetLogLoggerLevel(parseLogLevel(cfg.Logging.Level))
 
@@ -135,4 +148,20 @@ func parseLogLevel(level string) slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+func allSubscriptions(cfg *config.Config) (string, error) {
+	exchangeInfo, err := binance.FetchExchangeInfo(cfg.Integrations.Binance)
+	if err != nil {
+		slog.Error(err.Error())
+		return "", err
+	}
+
+	symbols := make([]string, 0, len(exchangeInfo.Symbols))
+
+	for _, s := range exchangeInfo.Symbols {
+		symbols = append(symbols, s.Symbol)
+	}
+
+	return strings.Join(symbols, ","), nil
 }

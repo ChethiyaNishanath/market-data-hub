@@ -1,14 +1,5 @@
 package binance
 
-import (
-	"context"
-	"fmt"
-	"time"
-
-	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
-	rest "github.com/ChethiyaNishanath/market-data-hub/internal/rest-client"
-)
-
 type OrderBook struct {
 	LastUpdateID int        `json:"lastUpdateId"`
 	Bids         [][]string `json:"bids"`
@@ -58,31 +49,6 @@ func (ob *OrderBook) removeAsk(price string) {
 			return
 		}
 	}
-}
-
-func FetchSnapshot(symbol string, cfg config.BinanceConfig) (*OrderBook, error) {
-	restClient := rest.NewRestClient(cfg.RestApiUrlV3, 1*time.Second)
-
-	ctx := context.Background()
-
-	requestOpts := rest.RequestOptions{
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-	}
-
-	var orderbook OrderBook
-
-	path := fmt.Sprintf("/depth?symbol=%s&limit=1000", symbol)
-
-	err := restClient.Get(ctx, path, requestOpts, &orderbook)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &orderbook, nil
-
 }
 
 func (s *Streamer) GetOrderBook(symbol string) *OrderBook {
