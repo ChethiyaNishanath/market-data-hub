@@ -24,7 +24,7 @@ var snapshotCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(snapshotCmd)
 
-	snapshotCmd.Flags().String("addr", "localhost:50051", "gRPC server address")
+	snapshotCmd.Flags().String("addr", "0.0.0.0:50051", "gRPC server address")
 	snapshotCmd.Flags().String("symbol", "BTCUSDT", "Symbol to fetch the snapshot for")
 
 	viper.BindPFlag("addr", snapshotCmd.Flags().Lookup("addr"))
