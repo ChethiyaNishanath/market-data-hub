@@ -3,6 +3,10 @@
 Market Data Hub is a high-performance Go application that ingests real-time crypto market data (currently Binance), builds in-memory order books, and streams updates to clients over WebSocket.
 It also exposes a gRPC interface for retrieving real-time order book snapshots.
 
+| ![/assets/Market-data-hub.drawio.png](./assets/Market-data-hub.drawio.png) | 
+|:--:| 
+| *Architecture diagram* |
+
 ## Features
 
 ### 1. WebSocket real-time market data streaming
