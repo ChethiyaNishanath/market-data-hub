@@ -2,9 +2,14 @@ services:
   market-data-hub:
     build: .
     container_name: market-data-hub-app
+    command: ["app", "serve"]
     environment:
       PORT: 8080
       SHUTDOWN_TIMEOUT: 10
+      CONFIG_FILE: /app/config.yaml
+    volumes:
+      - ./config.yaml:/app/config.yaml
     ports:
       - "8080:8080"
+      - "50051:50051"
     restart: always
