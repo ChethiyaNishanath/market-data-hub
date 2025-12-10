@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
@@ -53,14 +54,20 @@ func (s *Streamer) Start(ctx context.Context) {
 
 	s.Symbols = make(map[string]*SymbolState)
 
-	for _, sym := range symbols {
+	wg := &sync.WaitGroup{}
 
+	wg.Add(len(symbols))
+
+	validSymbols := make([]string, 0)
+	for _, sym := range symbols {
 		symbol := strings.TrimSpace(sym)
 		symbol = strings.ToUpper(symbol)
-
-		if symbol == "" {
-			continue
+		if symbol != "" {
+			validSymbols = append(validSymbols, symbol)
 		}
+	}
+
+	for _, symbol := range validSymbols {
 
 		st := &SymbolState{
 			OrderBook:     nil,
@@ -73,7 +80,17 @@ func (s *Streamer) Start(ctx context.Context) {
 		s.Symbols[symbol] = st
 		s.mu.Unlock()
 
-		go s.streamDepthUpdates(ctx, symbol, st.updateCh, &st.buffer, &st.bufferMu, st.snapshotReady)
+		go s.streamDepthUpdates(ctx, symbol, st.updateCh, &st.buffer, &st.bufferMu, st.snapshotReady, wg)
+	}
+
+	slog.Info("Waiting for all WebSocket connections to be ready", "symbols", s.config.Subscriptions)
+	wg.Wait()
+	slog.Info("All WebSocket connections ready, starting snapshot fetches")
+
+	for _, symbol := range validSymbols {
+		s.mu.RLock()
+		st := s.Symbols[symbol]
+		s.mu.RUnlock()
 
 		go s.initializeSymbol(ctx, symbol, st)
 	}
@@ -96,16 +113,16 @@ func (s *Streamer) initializeSymbol(ctx context.Context, symbol string, st *Symb
 
 	close(st.snapshotReady)
 
-	time.Sleep(100 * time.Millisecond)
-
 	st.bufferMu.Lock()
 	bufferedCopy := make([]DepthUpdateEvent, len(st.buffer))
 	copy(bufferedCopy, st.buffer)
 	st.bufferMu.Unlock()
 
 	firstApplied := false
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, update := range bufferedCopy {
-		s.mu.Lock()
 		if !firstApplied {
 			if update.FirstUpdateEventID <= st.OrderBook.LastUpdateID+1 &&
 				update.FinalUpdateEventID >= st.OrderBook.LastUpdateID {
@@ -142,9 +159,18 @@ func (s *Streamer) streamDepthUpdates(
 	buffered *[]DepthUpdateEvent,
 	bufferMu *sync.Mutex,
 	snapshotReady <-chan struct{},
+	wg *sync.WaitGroup,
 ) {
 
-	isBuffering := true
+	isBuffering := atomic.Bool{}
+	isBuffering.Store(true)
+	wsReadyOnce := sync.Once{}
+
+	go func() {
+		<-snapshotReady
+		isBuffering.Store(false)
+		slog.Info("Buffering stopped", "symbol", symbol)
+	}()
 
 	for {
 		select {
@@ -156,16 +182,19 @@ func (s *Streamer) streamDepthUpdates(
 		client := ws.NewWSClient(ctx, s.config.WsStreamUrl)
 
 		client.OnMessage = func(mt websocket.MessageType, data []byte) {
+
+			var ack SubscribeAck
+			if json.Unmarshal(data, &ack) == nil && ack.ID == 1 {
+				wsReadyOnce.Do(func() {
+					wg.Done()
+					slog.Info("WebSocket ready", "symbol", symbol)
+				})
+			}
+
 			var update DepthUpdateEvent
 			if err := json.Unmarshal(data, &update); err == nil && update.EventType == "depthUpdate" {
 
-				select {
-				case <-snapshotReady:
-					isBuffering = false
-				default:
-				}
-
-				if isBuffering {
+				if isBuffering.Load() {
 					bufferMu.Lock()
 					*buffered = append(*buffered, update)
 					bufferMu.Unlock()
@@ -179,11 +208,6 @@ func (s *Streamer) streamDepthUpdates(
 				}
 
 				return
-			}
-
-			var ack SubscribeAck
-			if json.Unmarshal(data, &ack) == nil && ack.ID == 1 {
-				slog.Info("Subscription ACK received", "symbol", symbol)
 			}
 		}
 
