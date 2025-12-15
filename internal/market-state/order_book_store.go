@@ -1,7 +1,6 @@
 package marketstate
 
 import (
-	"maps"
 	"sync"
 )
 
@@ -31,7 +30,13 @@ func (d *OrderBookStore) GetItem(symbol string) (*OrderBook, bool) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	value, exists := d.Books[symbol]
-	return value, exists
+
+	if !exists {
+		return nil, false
+	}
+
+	cpy := *value
+	return &cpy, exists
 }
 
 func GetOrderBookStore() *OrderBookStore {
@@ -48,7 +53,11 @@ func (d *OrderBookStore) GetAll() map[string]*OrderBook {
 	defer d.mu.RUnlock()
 
 	result := make(map[string]*OrderBook, len(d.Books))
-	maps.Copy(result, d.Books)
+	for k, v := range d.Books {
+		cpy := *v
+		result[k] = &cpy
+	}
+
 	return result
 }
 
