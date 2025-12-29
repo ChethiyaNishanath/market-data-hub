@@ -9,7 +9,6 @@
 # Go build outputs
 /build/
 bin/
-app
 *.out
 
 # Dependency directories (vendor)
