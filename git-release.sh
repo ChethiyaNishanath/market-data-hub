@@ -13,4 +13,6 @@ git push origin "$VERSION"
 
 echo "Running ECR push script"
 
+chmod +x ./ecr-push.sh
+
 ./ecr-push.sh
