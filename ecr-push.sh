@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 APP_NAME="market-data-hub-app"
 ECR_REPO_NAME="chethiya-training-aws-ecr-repository"
 
