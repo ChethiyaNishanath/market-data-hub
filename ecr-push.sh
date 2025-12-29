@@ -24,18 +24,11 @@ docker build --build-arg VERSION="$VERSION" --build-arg COMMIT="$COMMIT" --build
 
 echo "Tagging Docker Image"
 docker tag "$APP_NAME:${VERSION}" "$ECR_IMAGE_URI"
-docker tag "$APP_NAME:${VERSION}" "${ECR_REGISTRY}/${ECR_REPO_NAME}:latest"
 
 echo "Pushing Image to ECR"
 if ! docker push "$ECR_IMAGE_URI"; then
   echo "Push failed for versioned tag, attempting cleanup"
   docker rmi "$ECR_IMAGE_URI" || true
-  exit 1
-fi
-
-if ! docker push "${ECR_REGISTRY}/${ECR_REPO_NAME}:latest"; then
-  echo "Push failed for latest tag, attempting cleanup"
-  docker rmi "${ECR_REGISTRY}/${ECR_REPO_NAME}:latest" || true
   exit 1
 fi
 
