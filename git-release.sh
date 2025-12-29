@@ -13,4 +13,4 @@ git push origin "$VERSION"
 
 echo "Running ECR push script"
 
-./push-to-ecr.sh
+./ecr-push.sh
