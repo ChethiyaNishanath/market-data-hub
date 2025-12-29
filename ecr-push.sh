@@ -14,7 +14,6 @@ COMMIT=$(git rev-parse --short HEAD)
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-VERSION=$(git describe --tags --always)
 ECR_IMAGE_URI="${ECR_REGISTRY}/${ECR_REPO_NAME}:${VERSION}"
 
 echo "Logging into Amazon ECR"
