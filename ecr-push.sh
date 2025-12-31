@@ -14,7 +14,7 @@ COMMIT=$(git rev-parse --short HEAD)
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-ECR_IMAGE_URI="${ECR_REGISTRY}/${ECR_REPO_NAME}:${VERSION}"
+ECR_IMAGE_URI="${ECR_REGISTRY}/${ECR_REPO_NAME}:${APP_NAME}-${VERSION}"
 
 echo "Logging into Amazon ECR"
 aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
