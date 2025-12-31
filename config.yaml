@@ -1,0 +1,12 @@
+server:
+  port: 8084
+  shutdownTimeout: 10
+
+integrations:
+  binance:
+    wsStreamUrl: wss://stream.binance.com:9443/ws
+    restApiUrlV3: https://api.binance.com/api/v3
+    subscriptions: BTCUSDT, BNBBTC, ETHBTC
+
+logging:
+  level: INFO

@@ -31,9 +31,7 @@ logs/
 .env
 .env.local
 .env.*
-.envrc
-config.yaml
-config.yml
+.envrcs
 
 # Docker
 /docker-compose.override.yml
