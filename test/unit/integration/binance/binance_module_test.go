@@ -7,8 +7,8 @@ import (
 
 	events "github.com/ChethiyaNishanath/market-data-hub/internal/bus"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
-	"github.com/ChethiyaNishanath/market-data-hub/internal/domain/subscription"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/exchange/binance"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/subcription"
 )
 
 func TestNewBinanceModule(t *testing.T) {
@@ -24,9 +24,9 @@ func TestNewBinanceModule(t *testing.T) {
 	defer cancel()
 
 	bus := events.New()
-	connMgr := subscription.NewConnectionManager()
+	connMgr := subcription.NewConnectionManager()
 
-	module := binance.NewModule(bus, connMgr, cfg)
+	module := binance.NewService(ctx, bus, connMgr, cfg)
 
 	if module == nil {
 		t.Fatalf("Expected not nil")
