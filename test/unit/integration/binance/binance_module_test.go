@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	events "github.com/ChethiyaNishanath/market-data-hub/internal/bus"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
-	events "github.com/ChethiyaNishanath/market-data-hub/internal/events"
-	"github.com/ChethiyaNishanath/market-data-hub/internal/integration/binance"
-	"github.com/ChethiyaNishanath/market-data-hub/internal/ws"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/exchange/binance"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/subcription"
 )
 
 func TestNewBinanceModule(t *testing.T) {
@@ -23,10 +23,10 @@ func TestNewBinanceModule(t *testing.T) {
 
 	defer cancel()
 
-	bus := events.NewBus()
-	connMgr := ws.NewConnectionManager(ctx)
+	bus := events.New()
+	connMgr := subcription.NewConnectionManager()
 
-	module := binance.NewModule(&ctx, bus, connMgr, cfg)
+	module := binance.NewService(ctx, bus, connMgr, cfg)
 
 	if module == nil {
 		t.Fatalf("Expected not nil")

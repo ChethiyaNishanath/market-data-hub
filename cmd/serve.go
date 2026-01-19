@@ -13,12 +13,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ChethiyaNishanath/market-data-hub/internal/interfaces/servers/grpc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/ChethiyaNishanath/market-data-hub/internal/app"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
-	"github.com/ChethiyaNishanath/market-data-hub/internal/grpc"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"

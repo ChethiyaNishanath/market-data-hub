@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	events "github.com/ChethiyaNishanath/market-data-hub/internal/events"
+	events "github.com/ChethiyaNishanath/market-data-hub/internal/bus"
 )
 
 func wait(wg *sync.WaitGroup) bool {
@@ -24,7 +24,7 @@ func wait(wg *sync.WaitGroup) bool {
 }
 
 func TestPublishSingleSubscriber(t *testing.T) {
-	bus := events.NewBus()
+	bus := events.New()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -55,7 +55,7 @@ func TestPublishSingleSubscriber(t *testing.T) {
 }
 
 func TestPublishMultipleSubscribers(t *testing.T) {
-	bus := events.NewBus()
+	bus := events.New()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -91,7 +91,7 @@ func TestPublishMultipleSubscribers(t *testing.T) {
 }
 
 func TestSubscribeThreadSafe(t *testing.T) {
-	bus := events.NewBus()
+	bus := events.New()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -109,7 +109,7 @@ func TestSubscribeThreadSafe(t *testing.T) {
 }
 
 func TestPublishThreadSafe(t *testing.T) {
-	bus := events.NewBus()
+	bus := events.New()
 
 	var received int
 	var mu sync.Mutex
@@ -137,6 +137,6 @@ func TestPublishThreadSafe(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	if received != 50 {
-		t.Errorf("expected 50 events received, got %d", received)
+		t.Errorf("expected 50 bus received, got %d", received)
 	}
 }

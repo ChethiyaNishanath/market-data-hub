@@ -3,11 +3,12 @@ package marketstate_test
 import (
 	"testing"
 
-	marketstate "github.com/ChethiyaNishanath/market-data-hub/internal/market-state"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/domain/orderbook"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/store/memory"
 )
 
 func TestNewDataStore(t *testing.T) {
-	store := marketstate.NewDataStore()
+	store := memory.NewDataStore()
 
 	if store == nil {
 		t.Fatal("expected non-nil store")
@@ -18,9 +19,9 @@ func TestNewDataStore(t *testing.T) {
 }
 
 func TestSetAndGetItem(t *testing.T) {
-	store := marketstate.NewDataStore()
+	store := memory.NewDataStore()
 
-	store.SetItem("BNBBTC", &marketstate.OrderBook{LastUpdateID: 12345})
+	store.SetItem("BNBBTC", &orderbook.OrderBook{LastUpdateID: 12345})
 
 	item, exists := store.GetItem("BNBBTC")
 	if !exists {
@@ -32,9 +33,9 @@ func TestSetAndGetItem(t *testing.T) {
 }
 
 func TestGetItemNotExists(t *testing.T) {
-	store := marketstate.NewDataStore()
+	store := memory.NewDataStore()
 
-	store.SetItem("BNBBTC", &marketstate.OrderBook{LastUpdateID: 1})
+	store.SetItem("BNBBTC", &orderbook.OrderBook{LastUpdateID: 1})
 
 	_, exists := store.GetItem("ETHBTC")
 
@@ -44,10 +45,10 @@ func TestGetItemNotExists(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	store := marketstate.NewDataStore()
+	store := memory.NewDataStore()
 
-	store.SetItem("BNBBTC", &marketstate.OrderBook{LastUpdateID: 1})
-	store.SetItem("ETHBTC", &marketstate.OrderBook{LastUpdateID: 1})
+	store.SetItem("BNBBTC", &orderbook.OrderBook{LastUpdateID: 1})
+	store.SetItem("ETHBTC", &orderbook.OrderBook{LastUpdateID: 1})
 
 	all := store.GetAll()
 
@@ -65,9 +66,9 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
-	store := marketstate.NewDataStore()
+	store := memory.NewDataStore()
 
-	store.SetItem("BNBBTC", &marketstate.OrderBook{LastUpdateID: 1})
+	store.SetItem("BNBBTC", &orderbook.OrderBook{LastUpdateID: 1})
 
 	store.DeleteItem("BNBBTC")
 
@@ -78,10 +79,10 @@ func TestDeleteItem(t *testing.T) {
 }
 
 func TestDeleteItemWithMultipleItemsInMap(t *testing.T) {
-	store := marketstate.NewDataStore()
+	store := memory.NewDataStore()
 
-	store.SetItem("BNBBTC", &marketstate.OrderBook{LastUpdateID: 1})
-	store.SetItem("ETHBTC", &marketstate.OrderBook{LastUpdateID: 1})
+	store.SetItem("BNBBTC", &orderbook.OrderBook{LastUpdateID: 1})
+	store.SetItem("ETHBTC", &orderbook.OrderBook{LastUpdateID: 1})
 
 	store.DeleteItem("BNBBTC")
 
