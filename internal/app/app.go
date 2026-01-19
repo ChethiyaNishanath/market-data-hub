@@ -3,33 +3,33 @@ package app
 import (
 	"context"
 
+	"github.com/ChethiyaNishanath/market-data-hub/internal/bus"
 	"github.com/ChethiyaNishanath/market-data-hub/internal/config"
-	events "github.com/ChethiyaNishanath/market-data-hub/internal/events"
-	"github.com/ChethiyaNishanath/market-data-hub/internal/integration/binance"
-	ws "github.com/ChethiyaNishanath/market-data-hub/internal/ws"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/exchange/binance"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/store/memory"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/subcription"
 	"github.com/go-chi/chi/v5"
 )
 
 type App struct {
 	cfg              *config.Config
-	WebSocketHandler *ws.Handler
+	WebSocketHandler *subcription.Handler
 }
 
 func NewApp(ctx *context.Context, cfg *config.Config) *App {
 
-	bus := events.NewBus()
-	connMgr := ws.NewConnectionManager(*ctx)
+	memory.NewDataStore()
+	eventBus := bus.New()
+	connMgr := subcription.NewConnectionManager()
 
-	websocketModule := ws.NewModule(ctx, connMgr, bus)
+	subscriptionService := subcription.NewService(connMgr)
+	binanceService := binance.NewService(*ctx, eventBus, connMgr, cfg.Integrations.Binance)
 
-	streamer := binance.NewStreamer(*ctx, bus, cfg.Integrations.Binance)
-	binance.NewModule(ctx, bus, connMgr, cfg.Integrations.Binance)
-
-	go streamer.Start(*ctx)
+	go binanceService.Start(*ctx)
 
 	return &App{
 		cfg:              cfg,
-		WebSocketHandler: websocketModule.Handler,
+		WebSocketHandler: subscriptionService.Handler,
 	}
 }
 

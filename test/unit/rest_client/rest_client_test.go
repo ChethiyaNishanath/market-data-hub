@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	rest "github.com/ChethiyaNishanath/market-data-hub/internal/rest-client"
+	"github.com/ChethiyaNishanath/market-data-hub/internal/interfaces/clients/rest"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -34,7 +34,7 @@ func TestDoRequest_JSONSuccess(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := rest.NewRestClient(server.URL, 5*time.Second)
+	client := rest.New(server.URL, 5*time.Second)
 
 	var out Resp
 	err := client.Get(context.Background(), "/hello", rest.RequestOptions{}, &out)
@@ -54,7 +54,7 @@ func TestDoRequest_TextPlain(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := rest.NewRestClient(server.URL, 5*time.Second)
+	client := rest.New(server.URL, 5*time.Second)
 
 	var out string
 	err := client.Get(context.Background(), "/", rest.RequestOptions{}, &out)
@@ -74,7 +74,7 @@ func TestDoRequest_Non200(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := rest.NewRestClient(server.URL, 5*time.Second)
+	client := rest.New(server.URL, 5*time.Second)
 
 	var out string
 	err := client.Get(context.Background(), "/", rest.RequestOptions{}, &out)
@@ -90,7 +90,7 @@ func TestDoRequest_UnknownContentType(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := rest.NewRestClient(server.URL, 5*time.Second)
+	client := rest.New(server.URL, 5*time.Second)
 
 	var out string
 	err := client.Get(context.Background(), "/", rest.RequestOptions{}, &out)
@@ -120,7 +120,7 @@ func TestDoRequest_QueryHeadersBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := rest.NewRestClient(server.URL, 5*time.Second)
+	client := rest.New(server.URL, 5*time.Second)
 
 	reqBody := map[string]any{"value": "hello"}
 	opts := rest.RequestOptions{
