@@ -34,6 +34,7 @@ type SubscribeAck struct {
 	Result string `json:"result"`
 }
 
+// FEEDBACK: Why does it needs ClientConnectionManager ?? This is like Binance service handling client connections
 func NewService(ctx context.Context, bus bus.IBus, connMgr subscription.ClientConnectionManager, cfg config.BinanceConfig) *Service {
 	return &Service{
 		ctx:           ctx,
@@ -44,8 +45,7 @@ func NewService(ctx context.Context, bus bus.IBus, connMgr subscription.ClientCo
 }
 
 func (s *Service) Start(ctx context.Context) {
-
-	s.RegisterEventSubscribers(s.config, s.clientConnMgr, s.bus)
+	s.RegisterEventSubscribers(s.config, s.clientConnMgr, s.bus) //
 
 	symbols := strings.Split(s.config.Subscriptions, ",")
 
@@ -80,7 +80,6 @@ func (s *Service) Start(ctx context.Context) {
 }
 
 func (s *Service) initializeSymbol(ctx context.Context, symbol string, st *SymbolState) {
-
 	snapshot, err := FetchSnapshot(symbol, s.config)
 	if err != nil {
 		slog.Error("Snapshot load failed", "symbol", symbol, "error", err)
@@ -134,7 +133,6 @@ func (s *Service) streamDepthUpdates(
 	snapshotReady <-chan struct{},
 	wg *sync.WaitGroup,
 ) {
-
 	internalRequestId, _ := uuid.NewUUID()
 
 	go func() {
@@ -164,7 +162,6 @@ func (s *Service) streamDepthUpdates(
 		client := wsInterface.New(ctx, newStream)
 
 		client.OnMessage = func(mt websocket.MessageType, data []byte) {
-
 			var ack SubscribeAck
 			if json.Unmarshal(data, &ack) == nil && ack.ID == internalRequestId.String() {
 				wsReadyOnce.Do(func() {
@@ -267,14 +264,13 @@ func (s *Service) applyDepthEvents(ctx context.Context, symbol string, st *Symbo
 }
 
 func (s *Service) applyDelta(symbol string, update DepthUpdateMessage, st *SymbolState) {
-
 	for _, bid := range update.BidsToUpdated {
 		price := bid[0]
 		quantity := bid[1]
 
 		qty, err := strconv.ParseFloat(quantity, 64)
 		if err != nil {
-			slog.Error("Failed to convert string to int:", "error", err)
+			slog.Error("Failed to convert string to int:", "error", err) // FEEDBACK: poor error handling as the process continues
 		}
 
 		if qty == 0 {
@@ -308,7 +304,6 @@ func (s *Service) applyDelta(symbol string, update DepthUpdateMessage, st *Symbo
 }
 
 func (s *Service) broadcastDepthUpdate(update DepthUpdateMessage) {
-
 	event := DepthUpdateEvent{
 		EventType:          "depthUpdate",
 		EventTime:          update.EventTime,
@@ -335,7 +330,6 @@ func (s *Service) GetOrderBook(symbol string) *orderbook.OrderBook {
 }
 
 func (s *Service) BroadcastOrderBookReset(symbol string, reason string, orderBook orderbook.OrderBook) {
-
 	event := OrderBookResetEvent{
 		Symbol:    symbol,
 		Snapshot:  orderBook,
@@ -346,8 +340,8 @@ func (s *Service) BroadcastOrderBookReset(symbol string, reason string, orderBoo
 	s.bus.Publish(OrderBookReset, fmt.Sprintf("%s@depth.reset", strings.ToLower(symbol)), event)
 }
 
+// FEEDBACK: why this is public?
 func (s *Service) RegisterEventSubscribers(config config.BinanceConfig, connMgr subscription.ClientConnectionManager, eventBus bus.IBus) {
-
 	symbols := strings.SplitSeq(strings.ToLower(config.Subscriptions), ",")
 
 	for symbol := range symbols {
@@ -361,7 +355,7 @@ func (s *Service) RegisterEventSubscribers(config config.BinanceConfig, connMgr 
 		depthTopic := cleaned + "@depth"
 		resetTopic := cleaned + "@depth.reset"
 
-		eventBus.Subscribe(depthTopic, func(e bus.Event) {
+		eventBus.Subscribe(depthTopic, func(e bus.Event) { // FEEDBACK: why Binance service publish to the bus and then subscribe to it again to all connMgr.Broadcast?
 			evt := e.Data.(DepthUpdateEvent)
 			connMgr.Broadcast(e.Topic, WSMessage{
 				Data: evt,

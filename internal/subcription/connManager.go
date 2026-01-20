@@ -1,4 +1,4 @@
-package subcription
+package subcription // FEEDBACK: "subscription" is misspelled
 
 import (
 	"context"

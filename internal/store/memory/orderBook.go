@@ -41,7 +41,7 @@ func (d *OrderBookStore) GetItem(symbol string) (*orderbook.OrderBook, bool) {
 	return &cpy, exists
 }
 
-func GetOrderBookStore() *OrderBookStore {
+func GetOrderBookStore() *OrderBookStore { // FEEDBACK: Do not use global state via a singleton. Consider injecting dependencies instead.
 	once.Do(func() {
 		orderBookStore = &OrderBookStore{
 			Books: make(map[string]*orderbook.OrderBook),

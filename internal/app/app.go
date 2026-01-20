@@ -17,8 +17,7 @@ type App struct {
 }
 
 func NewApp(ctx *context.Context, cfg *config.Config) *App {
-
-	memory.NewDataStore()
+	memory.NewDataStore() // FEEDBACK: This object is leaked no? Consider injecting this to other components that need it without using global state.
 	eventBus := bus.New()
 	connMgr := subcription.NewConnectionManager()
 
