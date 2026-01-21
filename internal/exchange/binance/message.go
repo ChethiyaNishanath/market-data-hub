@@ -31,3 +31,4 @@ type WSMessage struct {
 	Topic   string `json:"topic,omitempty"`
 	Data    any    `json:"data,omitempty"`
 }
+//FEEDBACK : no need to have multiple files to define different messages. move it to one called message.go or model.go

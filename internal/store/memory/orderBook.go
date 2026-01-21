@@ -5,7 +5,7 @@ import (
 
 	"github.com/ChethiyaNishanath/market-data-hub/internal/domain/orderbook"
 )
-
+// FEEDBACK: store/memory naming is completely generic no? i told you to not to use generic names for packages ,but use business terms
 type OrderBookStore struct {
 	mu    sync.RWMutex
 	Books map[string]*orderbook.OrderBook
@@ -15,7 +15,7 @@ var (
 	orderBookStore *OrderBookStore
 	once           sync.Once
 )
-
+// FEEDBACK: the package name is store/memory, struct is OrderBookStore and create method is NewDataStore ---- the mistakes are repeating
 func NewDataStore() *OrderBookStore {
 	return &OrderBookStore{
 		Books: make(map[string]*orderbook.OrderBook),

@@ -18,3 +18,4 @@ type OrderBookResetEvent struct {
 	Reason    string              `json:"reason"`
 	Timestamp int64               `json:"timestamp"`
 }
+//FEEDBACK : no need to have multiple files to define different messages. move it to one called message.go or model.go
